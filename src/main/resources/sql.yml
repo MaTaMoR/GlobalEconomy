@@ -1,0 +1,7 @@
+SQL-Settings:
+  Type: SQLITE
+  IP: localhost
+  Port: 3306
+  DatabaseName: economy
+  Username: username
+  Password: password

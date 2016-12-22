@@ -1,0 +1,5 @@
+name: GlobalEconomy
+main: me.matamor.ge.spigot.SpigotEconomy
+version: 1.0
+author: MaTaMoR_
+softdepend: [Vault]

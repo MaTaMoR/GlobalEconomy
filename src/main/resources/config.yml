@@ -1,0 +1,4 @@
+Configuration:
+  Limit: 2000000
+  InjectVaultEconomy: false
+  CurrentBalanceAccount: CurrentBalanceAccount
