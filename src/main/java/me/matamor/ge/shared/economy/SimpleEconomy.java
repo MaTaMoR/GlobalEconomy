@@ -1,77 +1,78 @@
 package me.matamor.ge.shared.economy;
 
-import com.google.common.cache.*;
+import lombok.Getter;
 import me.matamor.ge.shared.EconomyPlugin;
 
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 public class SimpleEconomy implements Economy {
 
-    private final LoadingCache<UUID, EconomyEntry> entries;
+    private final Map<UUID, EconomyEntry> entries = new ConcurrentHashMap<>();
 
+    @Getter
     private final EconomyPlugin plugin;
+
+    @Getter
     private final double limit;
 
     public SimpleEconomy(final EconomyPlugin plugin, double limit) {
         this.plugin = plugin;
         this.limit = limit;
-        this.entries = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(30, TimeUnit.MINUTES)
-            .removalListener(new RemovalListener<UUID, EconomyEntry>() {
-                @Override
-                public void onRemoval(RemovalNotification<UUID, EconomyEntry> notification) {
-                    if (notification.getCause() == RemovalCause.EXPLICIT) {
-                        try {
-                            plugin.getEconomyDatabase().save(notification.getValue());
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }).build(new CacheLoader<UUID, EconomyEntry>() {
-                @Override
-                public EconomyEntry load(UUID key) throws Exception {
-                    EconomyEntry economyEntry = plugin.getEconomyDatabase().load(key);
-                    return (economyEntry == null ? new SimpleEconomyEntry(plugin.getEconomy(), key) : economyEntry);
-                }
-            });
     }
 
     @Override
-    public EconomyPlugin getPlugin() {
-        return this.plugin;
-    }
+    public EconomyEntry load(UUID uuid) throws SQLException {
+        EconomyEntry economyEntry = this.entries.get(uuid);
 
-    @Override
-    public double getLimit() {
-        return limit;
-    }
+        if (economyEntry == null) {
+            economyEntry = this.plugin.getEconomyDatabase().load(uuid);
 
-    @Override
-    public EconomyEntry load(UUID uuid) {
-        return this.entries.getUnchecked(uuid);
+            if (economyEntry == null) {
+                economyEntry = new SimpleEconomyEntry(this, uuid);
+            }
+
+            this.entries.put(uuid, economyEntry);
+        }
+
+        return economyEntry;
     }
 
     @Override
     public EconomyEntry getEntry(UUID uuid) {
-        return this.entries.getIfPresent(uuid);
+        return this.entries.get(uuid);
     }
 
     @Override
     public void remove(UUID uuid) {
-        this.entries.invalidate(uuid);
+        this.entries.remove(uuid);
     }
 
     @Override
     public void unload(UUID uuid) {
-        this.entries.invalidate(uuid);
+        EconomyEntry economyEntry = this.entries.remove(uuid);
+        if (economyEntry != null) {
+            try {
+                this.plugin.getEconomyDatabase().save(economyEntry);
+            } catch (SQLException e) {
+                this.plugin.getLogger().log(Level.SEVERE, "There was an error while saving Economy data!", e);
+            }
+        }
     }
 
     @Override
     public void unloadAll() {
-        this.entries.invalidateAll();
+        this.entries.values().forEach(e -> {
+            try {
+                this.plugin.getEconomyDatabase().save(e);
+            } catch (SQLException e1) {
+                this.plugin.getLogger().log(Level.SEVERE, "There was an error while saving Economy data!", e);
+            }
+        });
+
+        this.entries.clear();
     }
 }

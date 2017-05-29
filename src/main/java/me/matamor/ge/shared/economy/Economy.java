@@ -2,6 +2,7 @@ package me.matamor.ge.shared.economy;
 
 import me.matamor.ge.shared.EconomyPlugin;
 
+import java.sql.SQLException;
 import java.util.UUID;
 
 public interface Economy {
@@ -10,7 +11,7 @@ public interface Economy {
 
     double getLimit();
 
-    EconomyEntry load(UUID uuid);
+    EconomyEntry load(UUID uuid) throws SQLException;
 
     EconomyEntry getEntry(UUID uuid);
 

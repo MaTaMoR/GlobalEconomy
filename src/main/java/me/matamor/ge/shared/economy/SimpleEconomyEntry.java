@@ -1,5 +1,7 @@
 package me.matamor.ge.shared.economy;
 
+import lombok.Getter;
+
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,11 +10,13 @@ public class SimpleEconomyEntry implements EconomyEntry {
 
     private final Map<String, Double> entries = new ConcurrentHashMap<>();
 
+    @Getter
     private final Economy economy;
+
     private final UUID uuid;
 
     public SimpleEconomyEntry(Economy economy, UUID uuid) {
-        this(economy, uuid, new HashMap<String, Double>());
+        this(economy, uuid, new HashMap<>());
     }
 
     public SimpleEconomyEntry(Economy economy, UUID uuid, Map<String, Double> defaults) {
@@ -23,13 +27,8 @@ public class SimpleEconomyEntry implements EconomyEntry {
     }
 
     @Override
-    public Economy getEconomy() {
-        return economy;
-    }
-
-    @Override
     public UUID getUUID() {
-        return uuid;
+        return this.uuid;
     }
 
     @Override
@@ -39,15 +38,22 @@ public class SimpleEconomyEntry implements EconomyEntry {
 
     @Override
     public double getBalance(String account) {
-        return (hasAccount(account) ? this.entries.get(account) : 0);
+        return this.entries.getOrDefault(account, (double) 0);
     }
 
     @Override
     public void setBalance(String account, double balance) {
+        System.out.println(balance);
+        System.out.println(this.economy.getLimit());
+
         if (balance < 0)  {
             balance = 0;
         } else if (balance > this.economy.getLimit()) {
             balance = this.economy.getLimit();
+        }
+
+        if (balance <= 0) {
+            System.out.println("Balance set to '0' on account '" + account + "' from the user '" + this.uuid + "'");
         }
 
         this.entries.put(account, balance);

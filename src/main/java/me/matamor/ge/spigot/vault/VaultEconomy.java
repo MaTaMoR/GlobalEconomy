@@ -1,13 +1,12 @@
 package me.matamor.ge.spigot.vault;
 
 import me.matamor.ge.shared.economy.EconomyEntry;
-import me.matamor.ge.shared.identifier.exception.ExceptionReason;
-import me.matamor.ge.shared.identifier.exception.IdentifierException;
 import me.matamor.ge.spigot.SpigotEconomy;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.economy.EconomyResponse.ResponseType;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -127,11 +126,11 @@ public class VaultEconomy implements Economy {
         if (amount < 0) return new EconomyResponse(0, 0, ResponseType.FAILURE, "Cannot withdraw negative funds");
 
         EconomyEntry economyEntry = getEntry(name);
-        if(economyEntry == null) {
+        if (economyEntry == null) {
             return new EconomyResponse(0, 0, ResponseType.FAILURE, "User doesn't exist");
         } else {
             double balance = economyEntry.getBalance(currentBalanceAccount);
-            economyEntry.addBalance(currentBalanceAccount, amount);
+            economyEntry.removeBalance(currentBalanceAccount, amount);
 
             return new EconomyResponse(balance, amount, ResponseType.SUCCESS, null);
         }
@@ -142,11 +141,11 @@ public class VaultEconomy implements Economy {
         if (amount < 0) return new EconomyResponse(0, 0, ResponseType.FAILURE, "Cannot withdraw negative funds");
 
         EconomyEntry economyEntry = getEntry(offlinePlayer);
-        if(economyEntry == null) {
+        if (economyEntry == null) {
             return new EconomyResponse(0, 0, ResponseType.FAILURE, "User is not online!");
         } else {
             double balance = economyEntry.getBalance(currentBalanceAccount);
-            economyEntry.addBalance(currentBalanceAccount, amount);
+            economyEntry.removeBalance(currentBalanceAccount, amount);
 
             return new EconomyResponse(balance, amount, ResponseType.SUCCESS, null);
         }
@@ -167,7 +166,7 @@ public class VaultEconomy implements Economy {
         if (amount < 0) return new EconomyResponse(0, 0, ResponseType.FAILURE, "Cannot deposit negative funds");
 
         EconomyEntry economyEntry = getEntry(name);
-        if(economyEntry == null) {
+        if (economyEntry == null) {
             return new EconomyResponse(0, 0, ResponseType.FAILURE, "User is not online");
         } else {
             double balance = economyEntry.getBalance(currentBalanceAccount);
@@ -182,7 +181,7 @@ public class VaultEconomy implements Economy {
         if (amount < 0) return new EconomyResponse(0, 0, ResponseType.FAILURE, "Cannot deposit negative funds");
 
         EconomyEntry economyEntry = getEntry(offlinePlayer);
-        if(economyEntry == null) {
+        if (economyEntry == null) {
             return new EconomyResponse(0, 0, ResponseType.FAILURE, "User is not online");
         } else {
             double balance = economyEntry.getBalance(currentBalanceAccount);
@@ -283,18 +282,14 @@ public class VaultEconomy implements Economy {
     }
 
     private EconomyEntry getEntry(String name) {
-        try {
-            return this.plugin.getEconomy().getEntry(this.plugin.getIdentifierManager().load(name));
-        } catch (IdentifierException e) {
-            if (e.getReason() == ExceptionReason.OTHER) {
-                e.printStackTrace();
-            }
+        if (name == null) return null;
 
-            return null;
-        }
+        Player player = this.plugin.getServer().getPlayer(name);
+        return (player == null ? null : this.plugin.getEconomy().getEntry(player.getUniqueId()));
     }
 
     private EconomyEntry getEntry(OfflinePlayer offlinePlayer) {
+        if (offlinePlayer == null) return null;
         return this.plugin.getEconomy().getEntry(offlinePlayer.getUniqueId());
     }
 }
